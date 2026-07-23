@@ -71,6 +71,8 @@
         .btn-danger { background-color: #dc2626; padding: 4px 8px; font-size: 0.8rem; }
 
         /* 結果表示・シミュレーションエリア */
+        .grid-sim { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        @media (max-width: 640px) { .grid-sim { grid-template-columns: 1fr; } }
         .result-box { background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; margin-bottom: 16px; }
         .sim-box { background-color: var(--sim-bg); border: 2px solid var(--sim-border); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
         .result-title { font-size: 0.9rem; color: var(--text-main); font-weight: 700; margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; }
@@ -94,128 +96,157 @@
 <body>
 
 <div class="container">
-    <div class="tabs">
-        <button class="tab-btn active" data-target="calcTab">計算・シミュレーション</button>
-        <button class="tab-btn adult-only" data-target="settingsTab">プロトコル設定 (成人用)</button>
-    </div>
-
     <!-- ===== 計算ツール タブ ===== -->
-    <div id="calcTab" class="tab-content active grid-2col">
-        <!-- 入力パネル -->
-        <div class="panel">
-            <h2>1. 対象患者・基本情報</h2>
-            <form id="calcForm" onsubmit="return false;">
-                <div class="form-group" style="background: var(--bg-color); padding: 12px; border-radius: 6px; margin-bottom: 20px;">
-                    <div class="radio-group">
-                        <label class="radio-label" style="color: #1e40af;"><input type="radio" name="patientType" class="base-input" value="adult" checked> 成人 (16歳以上)</label>
-                        <label class="radio-label" style="color: #059669;"><input type="radio" name="patientType" class="base-input" value="child"> 小児 (0〜15歳)</label>
-                    </div>
+    <div id="calcTab" class="panel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h2 style="margin-bottom: 0;">1. 対象患者・基本情報</h2>
+            <div>
+                <button type="button" class="btn btn-secondary" id="clearBtn" style="font-size: 0.85rem; margin-right: 8px;">入力をクリア</button>
+                <button type="button" class="btn btn-primary" id="toggleNomogramBtn" style="font-size: 0.85rem;">ノモグラムの表示</button>
+            </div>
+        </div>
+        <form id="calcForm" onsubmit="return false;">
+            <div class="form-group" style="background: var(--bg-color); padding: 12px; border-radius: 6px; margin-bottom: 20px; display: flex; align-items: center; flex-wrap: wrap; gap: 24px;">
+                <div class="radio-group" style="margin: 0; padding: 0;">
+                    <label class="radio-label" style="color: #1e40af;"><input type="radio" name="patientType" class="base-input" value="adult" checked> 成人 (16歳以上)</label>
+                    <label class="radio-label" style="color: #059669;"><input type="radio" name="patientType" class="base-input" value="child"> 小児 (0〜15歳)</label>
                 </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <label for="birthDate" style="font-weight: bold; margin: 0; font-size: 0.95rem;">生年月日 (任意):</label>
+                    <input type="date" id="birthDate" class="base-input" style="padding: 6px 10px; border-radius: 4px; border: 1px solid var(--border-color); width: auto;">
+                </div>
+            </div>
 
-                <div class="form-group">
-                    <label>年齢 <span class="child-only" style="display:inline;">/ 生後日齢</span></label>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
-                        <div class="input-wrapper"><input type="number" id="ageYears" class="base-input" min="16" step="1" required><span class="unit">歳</span></div>
-                        <div class="input-wrapper child-only"><input type="number" id="ageMonths" class="base-input" min="0" max="11" step="1"><span class="unit">ヶ月</span></div>
-                        <div class="input-wrapper child-only"><input type="number" id="ageDays" class="base-input" min="2" step="1"><span class="unit">日齢</span></div>
-                    </div>
-                    <small class="child-only" style="color:var(--text-muted); margin-top:4px;">※歳・ヶ月を入力すると生後日齢を自動推算します。</small>
-                </div>
+            <!-- 横並びの入力フォーム (改行防止) -->
+            <div style="display: flex; flex-wrap: nowrap; gap: 12px; align-items: flex-end; background: var(--bg-color); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); overflow-x: auto; margin-bottom: 16px;">
                 
-                <div class="form-group">
+                <!-- 性別 -->
+                <div class="form-group" style="margin-bottom: 0; flex-shrink: 0;">
                     <label>性別</label>
-                    <div class="radio-group">
-                        <label class="radio-label" style="font-weight: normal;"><input type="radio" name="gender" class="base-input" value="male" checked> 男性</label>
-                        <label class="radio-label" style="font-weight: normal;"><input type="radio" name="gender" class="base-input" value="female"> 女性</label>
+                    <div class="radio-group" style="padding: 0; display: flex; gap: 8px; height: 38px; align-items: center;">
+                        <label class="radio-label" style="font-weight: normal; font-size: 0.9rem;"><input type="radio" name="gender" class="base-input" value="male" checked> 男性</label>
+                        <label class="radio-label" style="font-weight: normal; font-size: 0.9rem;"><input type="radio" name="gender" class="base-input" value="female"> 女性</label>
                     </div>
                 </div>
-                <div class="form-group adult-only">
-                    <label>身長 (BMI算出用)</label>
-                    <div class="input-wrapper"><input type="number" id="height" class="base-input" min="50" max="250" step="0.1"><span class="unit">cm</span></div>
-                </div>
-                <div class="form-group">
-                    <label>実体重</label>
-                    <div class="input-wrapper"><input type="number" id="weight" class="base-input" min="0.5" max="300" step="0.1" required><span class="unit">kg</span></div>
-                </div>
-                <div class="form-group">
-                    <label>血清クレアチニン (Scr)</label>
-                    <div class="input-wrapper"><input type="number" id="scr" class="base-input" min="0.01" max="20" step="0.01" required><span class="unit">mg/dL</span></div>
-                </div>
-                <div class="form-group adult-only" style="margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--border-color);">
-                    <label style="font-weight: normal; font-size: 0.85rem;"><input type="checkbox" id="manualClcrToggle" class="base-input"> CLcrを直接入力・上書きする</label>
-                    <div id="manualClcrWrapper" style="display:none; margin-top: 8px;">
-                        <div class="input-wrapper"><input type="number" id="manualClcr" class="base-input" min="0" step="0.1"><span class="unit">mL/min</span></div>
-                    </div>
-                </div>
-                
-                <div style="margin-top: 24px; text-align: right;">
-                    <button type="button" class="btn btn-secondary" id="clearBtn" style="font-size: 0.85rem;">入力をクリア</button>
-                </div>
-            </form>
 
-            <h2 style="margin-top: 32px;">2. 設計モード・目標値設定</h2>
-            <div class="form-group">
-                <div class="radio-group" style="background: var(--bg-color); padding: 12px; border-radius: 4px; border: 1px solid var(--border-color);">
-                    <label class="radio-label" style="font-weight: normal;"><input type="radio" name="designMode" class="base-input" value="protocol" checked> プロトコルから推算</label>
-                    <label class="radio-label" style="font-weight: normal;"><input type="radio" name="designMode" class="base-input" value="target"> 
+                <!-- 年齢 -->
+                <div class="form-group" style="margin-bottom: 0; flex-shrink: 0;">
+                    <label>年齢 <span class="child-only" style="display:inline;">/ 日齢</span></label>
+                    <div style="display: flex; gap: 6px;">
+                        <div class="input-wrapper"><input type="number" id="ageYears" class="base-input" min="16" step="1" style="width: 70px;" required><span class="unit" style="min-width:auto; margin-left:4px;">歳</span></div>
+                        <div class="input-wrapper child-only"><input type="number" id="ageMonths" class="base-input" min="0" max="11" step="1" style="width: 60px;"><span class="unit" style="min-width:auto; margin-left:4px;">ヶ月</span></div>
+                        <div class="input-wrapper child-only"><input type="number" id="ageDays" class="base-input" min="2" step="1" style="width: 70px;"><span class="unit" style="min-width:auto; margin-left:4px;">日齢</span></div>
+                    </div>
+                </div>
+
+                <!-- 身長 -->
+                <div class="form-group adult-only" style="margin-bottom: 0; flex-shrink: 0;">
+                    <label>身長</label>
+                    <div class="input-wrapper"><input type="number" id="height" class="base-input" min="50" max="250" step="0.1" style="width: 80px;"><span class="unit" style="min-width:auto; margin-left:4px;">cm</span></div>
+                </div>
+
+                <!-- 体重 -->
+                <div class="form-group" style="margin-bottom: 0; flex-shrink: 0;">
+                    <label>体重</label>
+                    <div class="input-wrapper"><input type="number" id="weight" class="base-input" min="0.5" max="300" step="0.1" style="width: 80px;" required><span class="unit" style="min-width:auto; margin-left:4px;">kg</span></div>
+                </div>
+
+                <!-- Scr -->
+                <div class="form-group" style="margin-bottom: 0; flex-shrink: 0;">
+                    <label>Scr (血清Cr)</label>
+                    <div class="input-wrapper"><input type="number" id="scr" class="base-input" min="0.01" max="20" step="0.01" style="width: 80px;" required><span class="unit" style="min-width:auto; margin-left:4px;">mg/dL</span></div>
+                </div>
+
+                <!-- CLcr直接入力 -->
+                <div class="form-group adult-only" style="margin-bottom: 0; flex-shrink: 0;">
+                    <label>CLcr直接入力</label>
+                    <div class="input-wrapper"><input type="number" id="manualClcr" class="base-input" min="0" step="0.1" style="width: 100px;"><span class="unit" style="min-width:auto; margin-left:4px;">mL/min</span></div>
+                </div>
+            </div>
+            <small class="child-only" style="color:var(--text-muted); display: block; margin-top: -12px; margin-bottom: 16px;">※歳・ヶ月を入力すると生後日齢を自動推算します。</small>
+        </form>
+
+        <h2 style="margin-top: 24px;">2. 設計モード・目標値設定</h2>
+        <div style="display: flex; flex-wrap: nowrap; gap: 16px; align-items: flex-end; background: var(--bg-color); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); overflow-x: auto;">
+            <!-- 設計モード -->
+            <div class="form-group" style="margin-bottom: 0; flex-shrink: 0;">
+                <label>設計モード</label>
+                <div class="radio-group" style="padding: 0; display: flex; gap: 12px; height: 38px; align-items: center;">
+                    <label class="radio-label" style="font-weight: normal; font-size: 0.9rem;"><input type="radio" name="designMode" class="base-input" value="protocol" checked> ノモグラムから推算</label>
+                    <label class="radio-label" style="font-weight: normal; font-size: 0.9rem;"><input type="radio" name="designMode" class="base-input" value="target"> 
                         <span class="adult-only" style="display:inline;">目標AUCから逆算</span>
                         <span class="child-only" style="display:inline;">目標トラフから逆算</span>
                     </label>
                 </div>
             </div>
-            
-            <div id="targetSettingsGroup" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;">
-                <div id="aucInputWrap" class="adult-only" style="opacity: 0.5; pointer-events: none; transition: 0.2s;">
-                    <label>目標AUC (400-550)</label>
-                    <input type="number" id="targetAuc" class="base-input" value="480" step="10">
+
+            <!-- 目標AUC -->
+            <div id="aucInputWrap" class="form-group adult-only" style="margin-bottom: 0; flex-shrink: 0; opacity: 0.5; pointer-events: none; transition: 0.2s;">
+                <label>目標AUC (400-550)</label>
+                <div class="input-wrapper">
+                    <input type="number" id="targetAuc" class="base-input" value="480" step="10" style="width: 90px;">
                 </div>
-                <div id="troughInputWrap" style="opacity: 0.5; pointer-events: none; transition: 0.2s;">
-                    <label class="adult-only" style="display:block;">目標トラフ下限 (μg/mL)</label>
-                    <label class="child-only" style="display:none;">目標トラフ (逆算用)</label>
-                    <input type="number" id="targetTrough" class="base-input" value="10" step="1">
+            </div>
+
+            <!-- 目標トラフ -->
+            <div id="troughInputWrap" class="form-group" style="margin-bottom: 0; flex-shrink: 0; opacity: 0.5; pointer-events: none; transition: 0.2s;">
+                <label class="adult-only" style="display:block;">目標トラフ下限</label>
+                <label class="child-only" style="display:none;">目標トラフ</label>
+                <div class="input-wrapper">
+                    <input type="number" id="targetTrough" class="base-input" value="10" step="1" style="width: 80px;">
+                    <span class="unit" style="min-width:auto; margin-left:4px;">μg/mL</span>
                 </div>
             </div>
         </div>
 
-        <!-- 出力パネル -->
-        <div class="panel">
-            <h2>3. 設計結果・動態シミュレーション</h2>
-            <div id="infoBox" class="info-box"></div>
-            <div id="alertBox" class="alert-box">高度腎機能障害です。自動投与設計は推奨されません。</div>
-
-            <!-- 初期投与量 (成人のみ) -->
-            <div class="result-box adult-only">
-                <div class="result-title">初期投与量 (Loading Dose)</div>
-                <div id="initialDose" class="result-value">-</div>
-                <div id="initialDoseSub" class="result-sub">-</div>
-            </div>
-            <div class="result-box child-only" style="display:none; background-color: #f1f5f9; border-color: #cbd5e1;">
-                <div class="result-title">初期投与量 (Loading Dose)</div>
-                <div class="result-value" style="color: var(--text-muted); font-size: 1.1rem;">推奨されません (小児モード)</div>
-            </div>
-
-            <!-- 維持用法用量 (シミュレーション可能UI) -->
-            <div class="result-box sim-box">
-                <div class="result-title" style="border-bottom-color: var(--sim-border);">維持用法用量 (推算値 ＆ 手動シミュレーション)</div>
-                <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
-                    ※値を変更すると即座に下部のPKパラメータが再計算されます。
+        <!-- 3. 出力パネル (設計結果・動態シミュレーション) -->
+        <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;">
+                <h2 style="margin-bottom: 0; white-space: nowrap;">3. 設計結果・動態シミュレーション</h2>
+                <div style="flex: 1; min-width: 280px;">
+                    <div id="infoBox" class="info-box" style="margin-bottom: 0; padding: 6px 12px;"></div>
+                    <div id="alertBox" class="alert-box" style="margin-bottom: 0; padding: 6px 12px;">高度腎機能障害です。自動投与設計は推奨されません。</div>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                    <div>
-                        <label style="color: var(--primary-color);">1回投与量 (mg)</label>
-                        <input type="number" id="simDose" class="sim-input" step="10" min="0" style="font-size: 1.2rem; font-weight: bold; color: var(--primary-color); border-color: var(--primary-color);">
+            </div>
+
+            <!-- 初期投与量と維持用法用量の並列表示 -->
+            <div class="grid-sim">
+                <!-- 初期投与量 (成人のみ/小児用) -->
+                <div>
+                    <div class="result-box adult-only" style="margin-bottom: 0; height: 100%;">
+                        <div class="result-title">初期投与量 (Loading Dose)</div>
+                        <div id="initialDose" class="result-value">-</div>
+                        <div id="initialDoseSub" class="result-sub">-</div>
                     </div>
-                    <div>
-                        <label style="color: var(--primary-color);">投与間隔</label>
-                        <select id="simInterval" class="sim-input" style="font-size: 1.1rem; font-weight: bold; color: var(--primary-color); border-color: var(--primary-color);">
-                            <option value="6">q6h (1日4回)</option>
-                            <option value="8">q8h (1日3回)</option>
-                            <option value="12" selected>q12h (1日2回)</option>
-                            <option value="24">q24h (1日1回)</option>
-                            <option value="36">q36h (1.5日に1回)</option>
-                            <option value="48">q48h (2日に1回)</option>
-                            <option value="72">q72h (3日に1回)</option>
-                        </select>
+                    <div class="result-box child-only" style="display:none; background-color: #f1f5f9; border-color: #cbd5e1; margin-bottom: 0; height: 100%;">
+                        <div class="result-title">初期投与量 (Loading Dose)</div>
+                        <div class="result-value" style="color: var(--text-muted); font-size: 1.1rem; margin-top: 8px;">推奨されません (小児モード)</div>
+                    </div>
+                </div>
+
+                <!-- 維持用法用量 (シミュレーション可能UI) -->
+                <div class="result-box sim-box" style="margin-bottom: 0; height: 100%;">
+                    <div class="result-title" style="border-bottom-color: var(--sim-border);">維持用法用量 (推算値 ＆ 手動シミュレーション)</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px;">
+                        <div>
+                            <label style="color: var(--primary-color);">1回投与量 (mg)</label>
+                            <input type="number" id="simDose" class="sim-input" step="10" min="0" style="font-size: 1.2rem; font-weight: bold; color: var(--primary-color); border-color: var(--primary-color);">
+                        </div>
+                        <div>
+                            <label style="color: var(--primary-color);">投与間隔</label>
+                            <select id="simInterval" class="sim-input" style="font-size: 1.1rem; font-weight: bold; color: var(--primary-color); border-color: var(--primary-color);">
+                                <option value="6">q6h (1日4回)</option>
+                                <option value="8">q8h (1日3回)</option>
+                                <option value="12" selected>q12h (1日2回)</option>
+                                <option value="24">q24h (1日1回)</option>
+                                <option value="36">q36h (1.5日に1回)</option>
+                                <option value="48">q48h (2日に1回)</option>
+                                <option value="72">q72h (3日に1回)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">
+                        ※値を変更すると即座に下部のPKパラメータが再計算されます。
                     </div>
                 </div>
             </div>
@@ -239,7 +270,7 @@
                 <div id="troughAlert" style="display: none; margin-top: 12px; font-size: 0.85rem; color: var(--alert-text); padding: 8px; background: var(--alert-bg); border-radius: 4px; border: 1px solid var(--alert-border);"></div>
             </div>
 
-            <!-- 参考パラメータ -->
+            <!-- 計算基礎情報表示 -->
             <div class="result-box" style="background-color: transparent; border: none; padding: 0;">
                 <div class="result-title" style="border: none; margin-bottom: 4px;">計算用基礎パラメータ</div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 0.85rem; color: var(--text-muted);">
@@ -251,49 +282,80 @@
                 </div>
             </div>
         </div>
+
+        <!-- ===== 4. ノモグラム設定フレーム ===== -->
+        <div id="nomogramFrame" style="display: none; margin-top: 28px; padding-top: 20px; border-top: 2px solid #8b5cf6;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin-bottom: 0; border: none; font-size: 1.1rem; color: #6d28d9;">4. ノモグラム設定</h2>
+                <button type="button" class="btn btn-secondary" id="closeNomogramBtn" style="font-size: 0.85rem;">閉じる</button>
+            </div>
+
+            <div class="adult-only">
+                <h2>グローバル設定 (成人のみ適用)</h2>
+                <div class="grid-2col" style="margin-bottom: 24px;">
+                    <div class="form-group">
+                        <label>投与量の丸め刻み (mg)</label>
+                        <div class="input-wrapper"><input type="number" id="cfgRounding" min="1" step="1"><span class="unit">mg</span></div>
+                    </div>
+                    <div class="form-group">
+                        <label>1回あたりの最大投与量 (mg)</label>
+                        <div class="input-wrapper"><input type="number" id="cfgMaxDose" min="100" step="100"><span class="unit">mg</span></div>
+                    </div>
+                    <div class="form-group">
+                        <label>初期投与量の係数 (mg/kg)</label>
+                        <div class="input-wrapper"><input type="number" id="cfgInitialFactor" min="1" step="1"><span class="unit">mg/kg</span></div>
+                    </div>
+                </div>
+
+                <h2>維持用量 CLcr区分ルール</h2>
+                <div class="settings-table-wrapper">
+                    <table id="rulesTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 15%;">下限値 (≦)</th>
+                                <th style="width: 15%;">上限値 (＜)</th>
+                                <th style="width: 20%;">用量の種類</th>
+                                <th style="width: 15%;">係数 / 固定値</th>
+                                <th style="width: 25%;">投与間隔テキスト</th>
+                                <th style="width: 10%;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rulesTbody"></tbody>
+                    </table>
+                </div>
+                <button class="btn btn-secondary" id="addRuleBtn">+ ルールを行追加</button>
+            </div>
+
+            <div class="child-only">
+                <h2>維持用量 月齢区分ルール (小児用)</h2>
+                <div class="settings-table-wrapper">
+                    <table id="childRulesTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 20%;">下限 (月齢) ≦</th>
+                                <th style="width: 20%;">上限 (月齢) ＜</th>
+                                <th style="width: 20%;">用量 (mg/kg)</th>
+                                <th style="width: 25%;">投与間隔 (時間)</th>
+                                <th style="width: 15%;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="childRulesTbody"></tbody>
+                    </table>
+                </div>
+                <button class="btn btn-secondary" id="addChildRuleBtn">+ ルールを行追加</button>
+                <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;">
+                    ※ 月齢の目安: 1歳 = 12ヶ月, 6歳 = 72ヶ月, 12歳 = 144ヶ月
+                </div>
+            </div>
+
+            <div class="actions-bar" style="display:flex; justify-content:space-between; margin-top:20px; padding-top:16px; border-top:1px solid #ccc;">
+                <button class="btn" style="background-color: #f4f7f6; color: #dc2626; border: 1px solid #d1d5db;" id="resetSettingsBtn">デフォルトに戻す</button>
+                <button class="btn btn-primary" id="saveSettingsBtn">設定を保存する</button>
+            </div>
+        </div>
     </div>
 
-    <!-- ===== プロトコル設定 タブ (成人のみ) ===== -->
-    <div id="settingsTab" class="tab-content panel adult-only">
-        <h2>グローバル設定 (成人のみ適用)</h2>
-        <div class="grid-2col" style="margin-bottom: 24px;">
-            <div class="form-group">
-                <label>投与量の丸め刻み (mg)</label>
-                <div class="input-wrapper"><input type="number" id="cfgRounding" min="1" step="1"><span class="unit">mg</span></div>
-            </div>
-            <div class="form-group">
-                <label>1回あたりの最大投与量 (mg)</label>
-                <div class="input-wrapper"><input type="number" id="cfgMaxDose" min="100" step="100"><span class="unit">mg</span></div>
-            </div>
-            <div class="form-group">
-                <label>初期投与量の係数 (mg/kg)</label>
-                <div class="input-wrapper"><input type="number" id="cfgInitialFactor" min="1" step="1"><span class="unit">mg/kg</span></div>
-            </div>
-        </div>
 
-        <h2>維持用量 CLcr区分ルール</h2>
-        <div class="settings-table-wrapper">
-            <table id="rulesTable">
-                <thead>
-                    <tr>
-                        <th style="width: 15%;">下限値 (≦)</th>
-                        <th style="width: 15%;">上限値 (＜)</th>
-                        <th style="width: 20%;">用量の種類</th>
-                        <th style="width: 15%;">係数 / 固定値</th>
-                        <th style="width: 25%;">投与間隔テキスト</th>
-                        <th style="width: 10%;">操作</th>
-                    </tr>
-                </thead>
-                <tbody id="rulesTbody"></tbody>
-            </table>
-        </div>
-        <button class="btn btn-secondary" id="addRuleBtn">+ ルールを行追加</button>
-
-        <div class="actions-bar" style="display:flex; justify-content:space-between; margin-top:20px; padding-top:16px; border-top:1px solid #ccc;">
-            <button class="btn" style="background-color: #f4f7f6; color: #dc2626; border: 1px solid #d1d5db;" id="resetSettingsBtn">デフォルトに戻す</button>
-            <button class="btn btn-primary" id="saveSettingsBtn">設定を保存する</button>
-        </div>
-    </div>
 </div>
 
 <script>
@@ -316,19 +378,30 @@ const defaultAdultConfig = {
 };
 let adultConfig = JSON.parse(localStorage.getItem('vcmConfigAdult')) || JSON.parse(JSON.stringify(defaultAdultConfig));
 
+const defaultChildConfig = {
+    rules: [
+        { id: 1, min: 1, max: 3, doseKg: 15, interval: 8 },
+        { id: 2, min: 3, max: 12, doseKg: 15, interval: 6 },
+        { id: 3, min: 12, max: 84, doseKg: 20, interval: 6 },
+        { id: 4, min: 84, max: 156, doseKg: 15, interval: 6 },
+        { id: 5, min: 156, max: 192, doseKg: 15, interval: 8 }
+    ]
+};
+let childConfig = JSON.parse(localStorage.getItem('vcmConfigChild')) || JSON.parse(JSON.stringify(defaultChildConfig));
+
 // アプリケーション全体の状態
 let pState = { mode: 'adult', calcWeight: 0, clcr: 0, CL: 0, Vc: 0, Vp: 0, Q: 8.33, Vd: 0, ageDays: 0, isValid: false };
 
 // ==========================================
 // 2. Event Listeners & UI Controls
 // ==========================================
-document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById(btn.dataset.target).classList.add('active');
-    });
+document.getElementById('toggleNomogramBtn').addEventListener('click', () => {
+    const frame = document.getElementById('nomogramFrame');
+    frame.style.display = frame.style.display === 'none' ? 'block' : 'none';
+});
+
+document.getElementById('closeNomogramBtn').addEventListener('click', () => {
+    document.getElementById('nomogramFrame').style.display = 'none';
 });
 
 document.querySelectorAll('input[name="designMode"]').forEach(radio => {
@@ -344,11 +417,6 @@ document.querySelectorAll('input[name="designMode"]').forEach(radio => {
         
         updateAll();
     });
-});
-
-document.getElementById('manualClcrToggle').addEventListener('change', (e) => {
-    document.getElementById('manualClcrWrapper').style.display = e.target.checked ? 'block' : 'none';
-    updateAll();
 });
 
 document.querySelectorAll('input[name="patientType"]').forEach(radio => {
@@ -374,6 +442,46 @@ document.querySelectorAll('input[name="patientType"]').forEach(radio => {
         document.querySelector('input[name="designMode"][value="protocol"]').click();
         updateAll();
     });
+});
+
+// 生年月日からの自動入力
+document.getElementById('birthDate').addEventListener('change', (e) => {
+    const bDateVal = e.target.value;
+    if (!bDateVal) return;
+    
+    const birthDate = new Date(bDateVal);
+    const today = new Date();
+    
+    // 年齢計算
+    let ageYears = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        ageYears--;
+    }
+    
+    // ヶ月計算 (小児用)
+    let ageMonths = m;
+    if (ageMonths < 0) ageMonths += 12;
+    if (today.getDate() < birthDate.getDate()) {
+        ageMonths--;
+        if (ageMonths < 0) ageMonths += 12;
+    }
+    
+    document.getElementById('ageYears').value = Math.max(0, ageYears);
+    
+    // 日齢計算 (小児用)
+    const diffTime = today.getTime() - birthDate.getTime();
+    const ageDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (ageYears >= 16) {
+        document.querySelector('input[name="patientType"][value="adult"]').checked = true;
+        document.querySelector('input[name="patientType"][value="adult"]').dispatchEvent(new Event('change'));
+    } else {
+        document.querySelector('input[name="patientType"][value="child"]').checked = true;
+        document.getElementById('ageMonths').value = ageMonths;
+        document.getElementById('ageDays').value = Math.max(0, ageDays);
+        document.querySelector('input[name="patientType"][value="child"]').dispatchEvent(new Event('change'));
+    }
 });
 
 // 日齢自動計算
@@ -455,9 +563,10 @@ const calculateBaseParam = () => {
         pState.clcr = ((140 - ageY) * pState.calcWeight) / (72 * calcScr);
         if (gender === 'female') pState.clcr *= 0.85;
         
-        if (document.getElementById('manualClcrToggle').checked && parseFloat(document.getElementById('manualClcr').value) > 0) {
-            pState.clcr = parseFloat(document.getElementById('manualClcr').value);
-            messages.push(`任意入力されたCLcr値を使用しています。`);
+        const manualClcrVal = parseFloat(document.getElementById('manualClcr').value);
+        if (!isNaN(manualClcrVal) && manualClcrVal > 0) {
+            pState.clcr = manualClcrVal;
+            messages.push(`手入力されたCLcr値を使用しています。`);
         }
         
         const clcrPk = Math.min(pState.clcr, 167.8);
@@ -565,16 +674,22 @@ const recommendDose = () => {
         } else {
             let doseKg = 15;
             
-            // 安全策ガード: 1ヶ月未満の小児のプロトコルは要件未定義のため対象外とする
+            // 安全策ガード: 1ヶ月未満の小児のノモグラム推算は要件未定義のため対象外とする
             if (totalMonths < 1) {
-                document.getElementById('alertBox').textContent = "1ヶ月未満のプロトコル推算は定義されていません。目標トラフ逆算を使用してください。";
+                document.getElementById('alertBox').textContent = "1ヶ月未満のノモグラム推算は定義されていません。目標トラフ逆算を使用してください。";
                 document.getElementById('alertBox').style.display = 'block';
                 return;
-            } else if (totalMonths >= 1 && totalMonths < 3) { doseKg = 15; recTau = 8; }
-            else if (totalMonths >= 3 && totalMonths < 12) { doseKg = 15; recTau = 6; }
-            else if (ageY >= 1 && ageY < 7) { doseKg = 20; recTau = 6; }
-            else if (ageY >= 7 && ageY <= 12) { doseKg = 15; recTau = 6; }
-            else if (ageY >= 13 && ageY <= 15) { doseKg = 15; recTau = 8; }
+            } else {
+                const appliedRule = childConfig.rules.find(r => totalMonths >= r.min && totalMonths < r.max);
+                if (appliedRule) {
+                    doseKg = appliedRule.doseKg;
+                    recTau = appliedRule.interval;
+                } else {
+                    document.getElementById('alertBox').textContent = "該当する月齢のノモグラムルールが見つかりません。";
+                    document.getElementById('alertBox').style.display = 'block';
+                    return;
+                }
+            }
             
             const doseRaw = pState.calcWeight * doseKg;
             recDose = Math.round(doseRaw / 10) * 10;
@@ -683,7 +798,6 @@ const updateAll = () => {
 document.getElementById('clearBtn').addEventListener('click', () => {
     // フォーム全体をリセット（ラジオボタン等も初期状態へ）
     document.getElementById('calcForm').reset();
-    document.getElementById('manualClcrWrapper').style.display = 'none';
     
     // 性別等のデフォルト値復元対応（リセットでcheckedは初期HTML状態に戻るため、明示的に再発火）
     document.querySelector('input[name="patientType"][value="adult"]').click();
@@ -692,9 +806,10 @@ document.getElementById('clearBtn').addEventListener('click', () => {
 });
 
 // ==========================================
-// 4. Settings Management (Adult Protocol)
+// 4. Settings Management (Adult & Child Protocol)
 // ==========================================
 const renderSettingsTable = () => {
+    // Adult Table
     document.getElementById('cfgRounding').value = adultConfig.roundingStep;
     document.getElementById('cfgMaxDose').value = adultConfig.maxDose;
     document.getElementById('cfgInitialFactor').value = adultConfig.initialFactor;
@@ -716,6 +831,23 @@ const renderSettingsTable = () => {
         `;
         tbody.appendChild(tr);
     });
+
+    // Child Table
+    const childTbody = document.getElementById('childRulesTbody');
+    childTbody.innerHTML = '';
+    childConfig.rules.forEach(rule => {
+        const tr = document.createElement('tr');
+        tr.dataset.id = rule.id;
+        tr.innerHTML = `
+            <td><input type="number" class="child-rule-min" value="${rule.min}" step="1"></td>
+            <td><input type="number" class="child-rule-max" value="${rule.max}" step="1"></td>
+            <td><input type="number" class="child-rule-doseKg" value="${rule.doseKg}" step="1"></td>
+            <td><input type="number" class="child-rule-interval" value="${rule.interval}" step="1"></td>
+            <td><button class="btn btn-danger delete-rule-btn">削除</button></td>
+        `;
+        childTbody.appendChild(tr);
+    });
+
     document.querySelectorAll('.delete-rule-btn').forEach(btn => {
         btn.addEventListener('click', (e) => e.target.closest('tr').remove());
     });
@@ -726,14 +858,20 @@ document.getElementById('addRuleBtn').addEventListener('click', () => {
     renderSettingsTable();
 });
 
+document.getElementById('addChildRuleBtn').addEventListener('click', () => {
+    childConfig.rules.push({ id: Date.now(), min: 0, max: 0, doseKg: 15, interval: 6 });
+    renderSettingsTable();
+});
+
 document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+    // Save Adult
     adultConfig.roundingStep = parseFloat(document.getElementById('cfgRounding').value) || 100;
     adultConfig.maxDose = parseFloat(document.getElementById('cfgMaxDose').value) || 2000;
     adultConfig.initialFactor = parseFloat(document.getElementById('cfgInitialFactor').value) || 30;
-    const newRules = [];
+    const newAdultRules = [];
     document.querySelectorAll('#rulesTbody tr').forEach(tr => {
         const maxVal = parseFloat(tr.querySelector('.rule-max').value);
-        newRules.push({
+        newAdultRules.push({
             id: tr.dataset.id,
             min: parseFloat(tr.querySelector('.rule-min').value) || 0,
             max: isNaN(maxVal) ? 9999 : maxVal,
@@ -742,18 +880,38 @@ document.getElementById('saveSettingsBtn').addEventListener('click', () => {
             interval: tr.querySelector('.rule-interval').value
         });
     });
-    newRules.sort((a, b) => a.min - b.min);
-    adultConfig.rules = newRules;
+    newAdultRules.sort((a, b) => a.min - b.min);
+    adultConfig.rules = newAdultRules;
     localStorage.setItem('vcmConfigAdult', JSON.stringify(adultConfig));
+
+    // Save Child
+    const newChildRules = [];
+    document.querySelectorAll('#childRulesTbody tr').forEach(tr => {
+        newChildRules.push({
+            id: tr.dataset.id,
+            min: parseFloat(tr.querySelector('.child-rule-min').value) || 0,
+            max: parseFloat(tr.querySelector('.child-rule-max').value) || 0,
+            doseKg: parseFloat(tr.querySelector('.child-rule-doseKg').value) || 15,
+            interval: parseFloat(tr.querySelector('.child-rule-interval').value) || 6
+        });
+    });
+    newChildRules.sort((a, b) => a.min - b.min);
+    childConfig.rules = newChildRules;
+    localStorage.setItem('vcmConfigChild', JSON.stringify(childConfig));
+
     alert('設定を保存しました。');
     renderSettingsTable();
     updateAll();
 });
 
 document.getElementById('resetSettingsBtn').addEventListener('click', () => {
-    if (confirm('設定をすべて初期プロトコルに戻しますか？')) {
+    if (confirm('設定をすべて初期ノモグラムに戻しますか？')) {
         adultConfig = JSON.parse(JSON.stringify(defaultAdultConfig));
         localStorage.removeItem('vcmConfigAdult');
+        
+        childConfig = JSON.parse(JSON.stringify(defaultChildConfig));
+        localStorage.removeItem('vcmConfigChild');
+        
         renderSettingsTable();
         updateAll();
     }
