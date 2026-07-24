@@ -553,7 +553,7 @@ const calculateBaseParam = () => {
                 isObese = true;
                 const ibw = 22 * (hm * hm);
                 pState.calcWeight = (ibw * 0.6) + (weight * 0.4);
-                messages.push(`BMI 25以上のため、補正体重(ABW)を使用。`);
+                messages.push(`BMI 25以上のため、CLcr・維持用量計算に補正体重(ABW)を使用。`);
             }
         }
         
@@ -576,8 +576,8 @@ const calculateBaseParam = () => {
         
         let initRaw = 0; let maxInit = adultConfig.maxDose; let initDesc = "";
         if (isObese) {
-            initRaw = pState.calcWeight * 25; maxInit = 3000;
-            initDesc = `肥満判定: 補正体重 × 25 mg/kg (最大3000mg)`;
+            initRaw = weight * 25; maxInit = 2000;
+            initDesc = `肥満判定: 実測体重 × 25 mg/kg (最大2000mg)`;
         } else {
             initRaw = pState.calcWeight * adultConfig.initialFactor;
             initDesc = `実体重 × ${adultConfig.initialFactor} mg/kg (最大${adultConfig.maxDose}mg)`;
