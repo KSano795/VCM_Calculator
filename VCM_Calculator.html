@@ -91,6 +91,18 @@
         table { width: 100%; border-collapse: collapse; min-width: 800px; }
         th, td { text-align: left; padding: 10px; border-bottom: 1px solid var(--border-color); }
         th { background-color: var(--bg-color); font-size: 0.9rem; }
+
+        /* 投与予定テーブル */
+        .sched-table { width: 100%; border-collapse: collapse; min-width: 680px; }
+        .sched-table th, .sched-table td { padding: 8px 10px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+        .sched-table th { background-color: var(--bg-color); font-size: 0.82rem; font-weight: 700; color: var(--text-main); }
+        .sched-table tr:hover { background-color: rgba(0,0,0,0.015); }
+        .sched-input { padding: 5px 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.9rem; width: 100%; }
+        .sched-input:focus { outline: none; border-color: var(--primary-color); }
+        .badge-target { display: inline-block; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
+        .badge-normal { background: #dcfce7; color: #166534; }
+        .badge-warning { background: #fef9c3; color: #854d0e; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
     </style>
 </head>
 <body>
@@ -133,7 +145,7 @@
                 <div class="form-group" style="margin-bottom: 0; flex-shrink: 0;">
                     <label>年齢 <span class="child-only" style="display:inline;">/ 日齢</span></label>
                     <div style="display: flex; gap: 6px;">
-                        <div class="input-wrapper"><input type="number" id="ageYears" class="base-input" min="16" step="1" style="width: 70px;" required><span class="unit" style="min-width:auto; margin-left:4px;">歳</span></div>
+                        <div class="input-wrapper"><input type="number" id="ageYears" class="base-input" min="16" step="0.1" style="width: 75px;" required><span class="unit" style="min-width:auto; margin-left:4px;">歳</span></div>
                         <div class="input-wrapper child-only"><input type="number" id="ageMonths" class="base-input" min="0" max="11" step="1" style="width: 60px;"><span class="unit" style="min-width:auto; margin-left:4px;">ヶ月</span></div>
                         <div class="input-wrapper child-only"><input type="number" id="ageDays" class="base-input" min="2" step="1" style="width: 70px;"><span class="unit" style="min-width:auto; margin-left:4px;">日齢</span></div>
                     </div>
@@ -271,7 +283,7 @@
             </div>
 
             <!-- 計算基礎情報表示 -->
-            <div class="result-box" style="background-color: transparent; border: none; padding: 0;">
+            <div class="result-box" style="background-color: transparent; border: none; padding: 0; margin-bottom: 20px;">
                 <div class="result-title" style="border: none; margin-bottom: 4px;">計算用基礎パラメータ</div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 0.85rem; color: var(--text-muted);">
                     <div>採用体重: <span id="dispWeight" style="color:var(--text-main);">-</span></div>
@@ -279,6 +291,82 @@
                     <div class="adult-only">採用CLcr: <span id="dispClcr" style="color:var(--text-main); font-weight:bold;">-</span></div>
                     <div class="child-only">日齢: <span id="dispAgeDays" style="color:var(--text-main);">-</span></div>
                     <div>全身CL: <span id="dispCL" style="color:var(--text-main);">-</span> L/h</div>
+                </div>
+            </div>
+
+            <!-- 投与予定履歴 ＆ 血中濃度推移グラフ -->
+            <div class="result-box" style="background-color: var(--surface-color); border: 1px solid var(--border-color); padding: 18px; margin-bottom: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+                    <div style="font-size: 1.05rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                        <span>📈 投与予定履歴 ＆ 血中濃度推移シミュレーション</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                        <button type="button" id="btnAutoGenerateSchedule" class="btn btn-primary" style="font-size: 0.85rem; padding: 6px 12px; cursor: pointer;">
+                            推算プランを一括反映
+                        </button>
+                        <button type="button" id="btnAddDoseRow" class="btn" style="background-color: #0d9488; color: white; font-size: 0.85rem; padding: 6px 12px; cursor: pointer;">
+                            + 投与を追加
+                        </button>
+                        <button type="button" id="btnClearSchedule" class="btn btn-secondary" style="font-size: 0.85rem; padding: 6px 12px; cursor: pointer;">
+                            履歴クリア
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 投与基準日時の設定バー -->
+                <div style="background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; font-size: 0.88rem;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label for="scheduleStartDateTime" style="font-weight: 600; margin-bottom: 0;">初回投与日時:</label>
+                        <input type="datetime-local" id="scheduleStartDateTime" class="base-input" style="padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.88rem; width: auto;">
+                    </div>
+                    <div style="color: var(--text-muted); font-size: 0.82rem;">
+                        ※各回の「投与予定日時/経過時間」「投与量」「点滴時間」を編集すると、リアルタイムに血中濃度曲線が再計算されます。
+                    </div>
+                </div>
+
+                <!-- 血中濃度推移グラフの表示エリア -->
+                <div style="position: relative; background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.82rem; color: var(--text-muted); flex-wrap: wrap; gap: 8px;">
+                        <div style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+                            <span style="display: flex; align-items: center; gap: 5px;">
+                                <span style="display: inline-block; width: 14px; height: 3px; background-color: var(--primary-color);"></span> 予測血中濃度 (μg/mL)
+                            </span>
+                            <span style="display: flex; align-items: center; gap: 5px;">
+                                <span style="display: inline-block; width: 14px; height: 10px; background-color: rgba(16, 185, 129, 0.2); border: 1px dashed #10b981;"></span> 推奨トラフ域 (10〜20 μg/mL)
+                            </span>
+                            <span style="display: flex; align-items: center; gap: 5px;">
+                                <span style="display: inline-block; width: 14px; height: 1px; border-top: 1px dashed #ef4444;"></span> 安全上限 (20 μg/mL)
+                            </span>
+                        </div>
+                        <div id="graphSummaryText" style="font-weight: 600; color: var(--text-main);"></div>
+                    </div>
+
+                    <!-- Canvas -->
+                    <div style="position: relative; width: 100%; height: 300px;">
+                        <canvas id="concentrationCanvas" style="width: 100%; height: 100%; display: block;"></canvas>
+                        <div id="graphTooltip" style="position: absolute; display: none; background: rgba(17, 24, 39, 0.92); color: white; padding: 6px 10px; border-radius: 4px; font-size: 0.8rem; pointer-events: none; z-index: 10; white-space: nowrap; box-shadow: 0 4px 6px rgba(0,0,0,0.25);"></div>
+                    </div>
+                </div>
+
+                <!-- 投与予定テーブル -->
+                <div style="overflow-x: auto;">
+                    <table class="sched-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 45px; text-align: center;">回</th>
+                                <th style="width: 190px;">投与予定日時</th>
+                                <th style="width: 100px;">経過時間 (h)</th>
+                                <th style="width: 120px;">投与量 (mg)</th>
+                                <th style="width: 100px;">点滴時間 (h)</th>
+                                <th style="width: 110px; text-align: right;">予測 Cmax</th>
+                                <th style="width: 110px; text-align: right;">予測 Cmin</th>
+                                <th style="width: 60px; text-align: center;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scheduleTbody">
+                            <!-- JSで動的レンダリング -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -430,7 +518,8 @@ document.querySelectorAll('input[name="patientType"]').forEach(radio => {
             document.getElementById('targetTrough').value = 13;
             document.getElementById('targetAuc').value = "";
             ageYearsInput.min = 0;
-            ageYearsInput.max = 15;
+            ageYearsInput.max = 15.9;
+            ageYearsInput.step = 0.1;
             if (parseFloat(ageYearsInput.value) >= 16) ageYearsInput.value = '';
         } else {
             document.body.classList.remove('mode-child');
@@ -438,51 +527,62 @@ document.querySelectorAll('input[name="patientType"]').forEach(radio => {
             document.getElementById('targetAuc').value = 480;
             ageYearsInput.min = 16;
             ageYearsInput.removeAttribute('max');
+            ageYearsInput.step = 0.1;
         }
         document.querySelector('input[name="designMode"][value="protocol"]').click();
         updateAll();
     });
 });
 
-// 生年月日からの自動入力
-document.getElementById('birthDate').addEventListener('change', (e) => {
+// 生年月日からの自動入力（本日を基準に小数点第1位まで計算）
+const handleBirthDateInput = (e) => {
     const bDateVal = e.target.value;
     if (!bDateVal) return;
     
     const birthDate = new Date(bDateVal);
     const today = new Date();
     
-    // 年齢計算
-    let ageYears = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        ageYears--;
+    const diffTime = today.getTime() - birthDate.getTime();
+    if (diffTime < 0) {
+        alert('生年月日に未来の日付は入力できません。');
+        return;
     }
+    
+    // 日齢計算
+    const diffDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+    
+    // 年齢計算 (1年 = 365.25日基準で小数点第1位まで算出)
+    const exactAgeYears = diffDays / 365.25;
+    const ageYearsFormatted = (Math.floor(exactAgeYears * 10) / 10).toFixed(1);
     
     // ヶ月計算 (小児用)
-    let ageMonths = m;
-    if (ageMonths < 0) ageMonths += 12;
+    let m = (today.getFullYear() - birthDate.getFullYear()) * 12 + (today.getMonth() - birthDate.getMonth());
     if (today.getDate() < birthDate.getDate()) {
-        ageMonths--;
-        if (ageMonths < 0) ageMonths += 12;
+        m--;
     }
+    const ageMonths = Math.max(0, m % 12);
     
-    document.getElementById('ageYears').value = Math.max(0, ageYears);
+    const isAdult = parseFloat(ageYearsFormatted) >= 16;
     
-    // 日齢計算 (小児用)
-    const diffTime = today.getTime() - birthDate.getTime();
-    const ageDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (ageYears >= 16) {
-        document.querySelector('input[name="patientType"][value="adult"]').checked = true;
-        document.querySelector('input[name="patientType"][value="adult"]').dispatchEvent(new Event('change'));
+    if (isAdult) {
+        const adultRadio = document.querySelector('input[name="patientType"][value="adult"]');
+        adultRadio.checked = true;
+        adultRadio.dispatchEvent(new Event('change'));
     } else {
-        document.querySelector('input[name="patientType"][value="child"]').checked = true;
+        const childRadio = document.querySelector('input[name="patientType"][value="child"]');
+        childRadio.checked = true;
         document.getElementById('ageMonths').value = ageMonths;
-        document.getElementById('ageDays').value = Math.max(0, ageDays);
-        document.querySelector('input[name="patientType"][value="child"]').dispatchEvent(new Event('change'));
+        document.getElementById('ageDays').value = Math.max(0, diffDays);
+        childRadio.dispatchEvent(new Event('change'));
     }
-});
+    
+    // モード切り替えイベント後に年齢欄へ小数点第1位の数値を反映
+    document.getElementById('ageYears').value = ageYearsFormatted;
+    updateAll();
+};
+
+document.getElementById('birthDate').addEventListener('change', handleBirthDateInput);
+document.getElementById('birthDate').addEventListener('input', handleBirthDateInput);
 
 // 日齢自動計算
 const updateDaysFromAge = () => {
@@ -535,10 +635,10 @@ const calculateBaseParam = () => {
         const gender = document.querySelector('input[name="gender"]:checked').value;
         if (isNaN(ageY)) { pState.isValid = false; clearOutputs(); return; }
         
-        // 15歳以下ガード
-        if (ageY <= 15) {
+        // 16歳未満ガード
+        if (ageY < 16) {
             clearOutputs();
-            alertBox.textContent = "【エラー】成人モードは16歳以上が対象です。15歳以下の場合は「小児」モードを選択してください。";
+            alertBox.textContent = "【エラー】成人モードは16歳以上が対象です。16歳未満の場合は「小児」モードを選択してください。";
             alertBox.style.display = 'block';
             pState.isValid = false;
             return;
@@ -789,19 +889,730 @@ const simulatePK = () => {
     }
 };
 
+// ==========================================
+// 投与予定履歴 ＆ 血中濃度推移シミュレーション
+// ==========================================
+let doseSchedule = [];
+let scheduleBaseDateTime = null;
+let graphHoverTime = null;
+
+const initScheduleStartDateTime = () => {
+    const input = document.getElementById('scheduleStartDateTime');
+    if (!input.value) {
+        const now = new Date();
+        now.setMinutes(0, 0, 0);
+        const pad = (n) => String(n).padStart(2, '0');
+        input.value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    }
+    scheduleBaseDateTime = new Date(input.value);
+};
+
+const formatDateTimeFromOffset = (hoursOffset) => {
+    if (!scheduleBaseDateTime || isNaN(scheduleBaseDateTime.getTime())) {
+        initScheduleStartDateTime();
+    }
+    const d = new Date(scheduleBaseDateTime.getTime() + hoursOffset * 3600 * 1000);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+const getStandardInfusionTime = (dose) => {
+    if (pState.mode === 'adult') {
+        if (dose <= 1000) return 1.0;
+        if (dose < 1500) return 1.5;
+        return 2.0;
+    }
+    return 1.0;
+};
+
+// 任意時刻 t (h) における血中濃度計算
+const getConcentrationAt = (t) => {
+    if (!pState.isValid || doseSchedule.length === 0) return 0;
+    
+    let totalConc = 0;
+    const mode = pState.mode;
+
+    if (mode === 'adult') {
+        const CL = pState.CL;
+        const Vc = pState.Vc;
+        const Vp = pState.Vp;
+        const Q = pState.Q || 8.33;
+
+        if (CL <= 0 || Vc <= 0 || Vp <= 0) return 0;
+
+        const k10 = CL / Vc;
+        const k12 = Q / Vc;
+        const k21 = Q / Vp;
+        const S = k10 + k12 + k21;
+        const P = k10 * k21;
+        const disc = Math.max(0, S * S - 4 * P);
+        const alpha = (S + Math.sqrt(disc)) / 2;
+        const beta = (S - Math.sqrt(disc)) / 2;
+        const denom = alpha - beta;
+        if (denom <= 0) return 0;
+
+        const A_coeff = (alpha - k21) / (Vc * denom);
+        const B_coeff = (k21 - beta) / (Vc * denom);
+
+        for (const d of doseSchedule) {
+            const deltaT = t - d.timeOffset;
+            if (deltaT <= 0) continue;
+            const dose = d.dose;
+            const tinf = Math.max(0.1, d.tinf);
+            const R = dose / tinf;
+
+            if (deltaT <= tinf) {
+                const termA = (A_coeff / alpha) * (1 - Math.exp(-alpha * deltaT));
+                const termB = (B_coeff / beta) * (1 - Math.exp(-beta * deltaT));
+                totalConc += R * (termA + termB);
+            } else {
+                const tPost = deltaT - tinf;
+                const termA = (A_coeff / alpha) * (1 - Math.exp(-alpha * tinf)) * Math.exp(-alpha * tPost);
+                const termB = (B_coeff / beta) * (1 - Math.exp(-beta * tinf)) * Math.exp(-beta * tPost);
+                totalConc += R * (termA + termB);
+            }
+        }
+    } else {
+        // 小児: 1-コンパートメント
+        const CL = pState.CL;
+        const Vd = pState.Vd;
+        if (CL <= 0 || Vd <= 0) return 0;
+        const k = CL / Vd;
+
+        for (const d of doseSchedule) {
+            const deltaT = t - d.timeOffset;
+            if (deltaT <= 0) continue;
+            const dose = d.dose;
+            const tinf = Math.max(0.1, d.tinf);
+            const R = dose / tinf;
+
+            if (deltaT <= tinf) {
+                totalConc += (R / CL) * (1 - Math.exp(-k * deltaT));
+            } else {
+                const tPost = deltaT - tinf;
+                totalConc += (R / CL) * (1 - Math.exp(-k * tinf)) * Math.exp(-k * tPost);
+            }
+        }
+    }
+
+    return Math.max(0, totalConc);
+};
+
+// 各回の Cmax / Cmin 更新
+const updateTableCmaxCmin = () => {
+    doseSchedule.forEach((item, index) => {
+        const cmaxCell = document.getElementById(`cmax_${item.id}`);
+        const cminCell = document.getElementById(`cmin_${item.id}`);
+        if (!cmaxCell || !cminCell) return;
+
+        if (!pState.isValid) {
+            cmaxCell.textContent = '-';
+            cminCell.textContent = '-';
+            return;
+        }
+
+        const peakT = item.timeOffset + item.tinf;
+        const cmaxVal = getConcentrationAt(peakT);
+        cmaxCell.innerHTML = `<span style="color:var(--text-main); font-weight:700;">${cmaxVal.toFixed(1)}</span> <span style="font-size:0.75rem; color:var(--text-muted);">μg/mL</span>`;
+
+        let nextT = item.timeOffset + 12;
+        if (index + 1 < doseSchedule.length) {
+            nextT = doseSchedule[index + 1].timeOffset;
+        } else if (doseSchedule.length > 1) {
+            const prev = doseSchedule[index - 1];
+            nextT = item.timeOffset + Math.max(4, item.timeOffset - prev.timeOffset);
+        } else {
+            const tau = parseInt(document.getElementById('simInterval').value) || 12;
+            nextT = item.timeOffset + tau;
+        }
+        const cminVal = getConcentrationAt(nextT);
+        
+        let badgeClass = 'badge-normal';
+        if (cminVal < 10) badgeClass = 'badge-warning';
+        else if (cminVal > 20) badgeClass = 'badge-danger';
+
+        cminCell.innerHTML = `<span class="badge-target ${badgeClass}">${cminVal.toFixed(1)} μg/mL</span>`;
+    });
+};
+
+// Canvas グラフの描画
+const drawConcentrationGraph = () => {
+    const canvas = document.getElementById('concentrationCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+
+    if (rect.width === 0 || rect.height === 0) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+
+    const w = rect.width;
+    const h = rect.height;
+
+    ctx.clearRect(0, 0, w, h);
+
+    if (doseSchedule.length === 0 || !pState.isValid) {
+        ctx.fillStyle = '#9ca3af';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const msg = !pState.isValid 
+            ? '患者情報を入力すると、血中濃度推移グラフがシミュレーションされます。'
+            : '投与予定がありません。「推算プランを一括反映」または「+ 投与を追加」してください。';
+        ctx.fillText(msg, w / 2, h / 2);
+        document.getElementById('graphSummaryText').textContent = '';
+        return;
+    }
+
+    const padL = 50;
+    const padR = 25;
+    const padT = 30;
+    const padB = 40;
+    const plotW = w - padL - padR;
+    const plotH = h - padT - padB;
+
+    const lastDose = doseSchedule[doseSchedule.length - 1];
+    const maxOffset = lastDose ? lastDose.timeOffset : 24;
+    const maxTime = Math.max(48, Math.ceil((maxOffset + 24) / 12) * 12);
+    const minTime = 0;
+
+    let maxConc = 25;
+    const samplePoints = [];
+    const step = Math.min(0.2, maxTime / 500);
+
+    const criticalTimes = new Set([0, maxTime]);
+    doseSchedule.forEach(d => {
+        criticalTimes.add(Math.max(0, d.timeOffset));
+        criticalTimes.add(Math.max(0, d.timeOffset + d.tinf));
+        criticalTimes.add(Math.max(0, d.timeOffset + d.tinf + 0.05));
+    });
+
+    for (let t = 0; t <= maxTime; t += step) {
+        criticalTimes.add(Math.round(t * 100) / 100);
+    }
+    const sortedTimes = Array.from(criticalTimes).sort((a, b) => a - b);
+
+    sortedTimes.forEach(t => {
+        if (t <= maxTime) {
+            const c = getConcentrationAt(t);
+            samplePoints.push({ t, c });
+            if (c > maxConc) maxConc = c;
+        }
+    });
+
+    const yMax = Math.max(35, Math.ceil((maxConc * 1.15) / 10) * 10);
+
+    const getX = (t) => padL + (t / maxTime) * plotW;
+    const getY = (c) => padT + plotH - (c / yMax) * plotH;
+
+    // 1. 目標トラフ域バンド (10 - 20 μg/mL)
+    const y10 = getY(10);
+    const y20 = getY(20);
+    ctx.fillStyle = 'rgba(16, 185, 129, 0.12)';
+    ctx.fillRect(padL, y20, plotW, y10 - y20);
+
+    ctx.fillStyle = '#059669';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('目標トラフ域 (10〜20)', padL + plotW - 6, (y10 + y20) / 2);
+
+    // 2. 安全上限ライン (20 μg/mL)
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(padL, y20);
+    ctx.lineTo(padL + plotW, y20);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 3. Y軸グリッド＆目盛り
+    ctx.strokeStyle = '#e5e7eb';
+    ctx.lineWidth = 1;
+    ctx.fillStyle = '#6b7280';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+
+    const yStep = yMax <= 40 ? 10 : 15;
+    for (let cVal = 0; cVal <= yMax; cVal += yStep) {
+        const yPos = getY(cVal);
+        ctx.beginPath();
+        ctx.moveTo(padL, yPos);
+        ctx.lineTo(padL + plotW, yPos);
+        ctx.stroke();
+
+        ctx.fillText(`${cVal}`, padL - 8, yPos);
+    }
+
+    // Y軸タイトル
+    ctx.save();
+    ctx.translate(14, padT + plotH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#4b5563';
+    ctx.font = '11px sans-serif';
+    ctx.fillText('血中濃度 (μg/mL)', 0, 0);
+    ctx.restore();
+
+    // 4. X軸グリッド＆時間・日付目盛り
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+
+    const xInterval = maxTime <= 60 ? 12 : (maxTime <= 120 ? 24 : 48);
+    for (let tVal = 0; tVal <= maxTime; tVal += xInterval) {
+        const xPos = getX(tVal);
+        ctx.strokeStyle = '#e5e7eb';
+        ctx.beginPath();
+        ctx.moveTo(xPos, padT);
+        ctx.lineTo(xPos, padT + plotH);
+        ctx.stroke();
+
+        ctx.fillStyle = '#4b5563';
+        ctx.fillText(`${tVal}h`, xPos, padT + plotH + 5);
+
+        if (scheduleBaseDateTime) {
+            const dt = new Date(scheduleBaseDateTime.getTime() + tVal * 3600 * 1000);
+            ctx.fillStyle = '#9ca3af';
+            ctx.font = '10px sans-serif';
+            ctx.fillText(`${dt.getMonth()+1}/${dt.getDate()} ${String(dt.getHours()).padStart(2,'0')}:00`, xPos, padT + plotH + 18);
+            ctx.font = '11px sans-serif';
+        }
+    }
+
+    // 5. 点滴投与区間インジケータ
+    doseSchedule.forEach((d, idx) => {
+        const xStart = getX(d.timeOffset);
+        const xEnd = getX(d.timeOffset + d.tinf);
+        
+        ctx.fillStyle = pState.mode === 'adult' ? 'rgba(30, 64, 175, 0.12)' : 'rgba(5, 150, 105, 0.12)';
+        ctx.fillRect(xStart, padT, Math.max(3, xEnd - xStart), plotH);
+
+        ctx.fillStyle = pState.mode === 'adult' ? '#1e40af' : '#059669';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(`#${idx+1} ${d.dose}mg`, (xStart + xEnd) / 2, padT - 4);
+    });
+
+    // 6. 血中濃度曲線のグラデーション
+    const grad = ctx.createLinearGradient(0, padT, 0, padT + plotH);
+    if (pState.mode === 'adult') {
+        grad.addColorStop(0, 'rgba(37, 99, 235, 0.25)');
+        grad.addColorStop(1, 'rgba(37, 99, 235, 0.01)');
+    } else {
+        grad.addColorStop(0, 'rgba(16, 185, 129, 0.25)');
+        grad.addColorStop(1, 'rgba(16, 185, 129, 0.01)');
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(getX(samplePoints[0].t), getY(0));
+    samplePoints.forEach(pt => {
+        ctx.lineTo(getX(pt.t), getY(pt.c));
+    });
+    ctx.lineTo(getX(samplePoints[samplePoints.length - 1].t), getY(0));
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // 7. 曲線の描画
+    ctx.beginPath();
+    ctx.strokeStyle = pState.mode === 'adult' ? '#1e40af' : '#059669';
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    samplePoints.forEach((pt, i) => {
+        const px = getX(pt.t);
+        const py = getY(pt.c);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+    });
+    ctx.stroke();
+
+    // 8. ピークとトラフのマーカー
+    let maxObservedPeak = 0;
+    let minObservedTrough = 999;
+    doseSchedule.forEach((d, idx) => {
+        // Cmax
+        const peakT = d.timeOffset + d.tinf;
+        const peakC = getConcentrationAt(peakT);
+        if (peakC > maxObservedPeak) maxObservedPeak = peakC;
+
+        const peakX = getX(peakT);
+        const peakY = getY(peakC);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#1e40af';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(peakX, peakY, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Cmin
+        let troughT = d.timeOffset + 12;
+        if (idx + 1 < doseSchedule.length) {
+            troughT = doseSchedule[idx + 1].timeOffset;
+        } else if (doseSchedule.length > 1) {
+            troughT = d.timeOffset + (d.timeOffset - doseSchedule[idx - 1].timeOffset);
+        } else {
+            const tau = parseInt(document.getElementById('simInterval').value) || 12;
+            troughT = d.timeOffset + tau;
+        }
+        if (troughT <= maxTime) {
+            const troughC = getConcentrationAt(troughT);
+            if (troughC < minObservedTrough) minObservedTrough = troughC;
+
+            const trX = getX(troughT);
+            const trY = getY(troughC);
+
+            let trColor = '#10b981';
+            if (troughC < 10) trColor = '#f59e0b';
+            else if (troughC > 20) trColor = '#ef4444';
+
+            ctx.fillStyle = trColor;
+            ctx.beginPath();
+            ctx.arc(trX, trY, 4.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    });
+
+    // 9. ホバー線
+    if (graphHoverTime !== null && graphHoverTime >= minTime && graphHoverTime <= maxTime) {
+        const hoverX = getX(graphHoverTime);
+        const hoverC = getConcentrationAt(graphHoverTime);
+        const hoverY = getY(hoverC);
+
+        ctx.strokeStyle = '#4b5563';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(hoverX, padT);
+        ctx.lineTo(hoverX, padT + plotH);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = '#dc2626';
+        ctx.beginPath();
+        ctx.arc(hoverX, hoverY, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    const tauVal = parseInt(document.getElementById('simInterval').value) || 12;
+    const lastDoseCmin = doseSchedule.length > 0 ? getConcentrationAt(lastDose.timeOffset + tauVal) : 0;
+    document.getElementById('graphSummaryText').textContent = 
+        `登録回数: ${doseSchedule.length}回 | 最高予測ピーク: ${maxObservedPeak.toFixed(1)} μg/mL | 最終予測トラフ: ${lastDoseCmin.toFixed(1)} μg/mL`;
+};
+
+const updateConcentrationSimulation = () => {
+    updateTableCmaxCmin();
+    drawConcentrationGraph();
+};
+
+const renderScheduleTable = () => {
+    const tbody = document.getElementById('scheduleTbody');
+    tbody.innerHTML = '';
+
+    if (doseSchedule.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">投与予定が登録されていません。「推算プランを一括反映」または「+ 投与を追加」をクリックしてください。</td></tr>`;
+        return;
+    }
+
+    doseSchedule.forEach((item, index) => {
+        const dtString = formatDateTimeFromOffset(item.timeOffset);
+        const tr = document.createElement('tr');
+        tr.dataset.id = item.id;
+        tr.innerHTML = `
+            <td style="text-align: center; font-weight: bold; color: var(--primary-color);">#${index + 1}</td>
+            <td>
+                <input type="datetime-local" class="sched-input sched-datetime" value="${dtString}">
+            </td>
+            <td>
+                <div style="display:flex; align-items:center; gap:3px;">
+                    <input type="number" class="sched-input sched-offset" value="${item.timeOffset}" step="0.5" min="0" style="width:70px;">
+                    <span style="font-size:0.8rem; color:var(--text-muted);">h</span>
+                </div>
+            </td>
+            <td>
+                <div style="display:flex; align-items:center; gap:3px;">
+                    <input type="number" class="sched-input sched-dose" value="${item.dose}" step="50" min="50" style="width:85px; font-weight:bold;">
+                    <span style="font-size:0.8rem; color:var(--text-muted);">mg</span>
+                </div>
+            </td>
+            <td>
+                <div style="display:flex; align-items:center; gap:3px;">
+                    <input type="number" class="sched-input sched-tinf" value="${item.tinf}" step="0.1" min="0.5" max="6" style="width:65px;">
+                    <span style="font-size:0.8rem; color:var(--text-muted);">h</span>
+                </div>
+            </td>
+            <td style="text-align: right;" id="cmax_${item.id}">-</td>
+            <td style="text-align: right;" id="cmin_${item.id}">-</td>
+            <td style="text-align: center;">
+                <button type="button" class="btn btn-danger delete-sched-btn" style="padding: 2px 6px; font-size: 0.75rem;">削除</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    tbody.querySelectorAll('tr').forEach(tr => {
+        const id = tr.dataset.id;
+        const item = doseSchedule.find(d => d.id === id);
+        if (!item) return;
+
+        tr.querySelector('.sched-datetime').addEventListener('change', (e) => {
+            const val = e.target.value;
+            if (!val || !scheduleBaseDateTime) return;
+            const targetDate = new Date(val);
+            const diffHours = (targetDate.getTime() - scheduleBaseDateTime.getTime()) / (3600 * 1000);
+            item.timeOffset = Math.max(0, Math.round(diffHours * 10) / 10);
+            doseSchedule.sort((a, b) => a.timeOffset - b.timeOffset);
+            renderScheduleTable();
+            updateConcentrationSimulation();
+        });
+
+        tr.querySelector('.sched-offset').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            if (isNaN(val) || val < 0) return;
+            item.timeOffset = val;
+            const dtInput = tr.querySelector('.sched-datetime');
+            dtInput.value = formatDateTimeFromOffset(item.timeOffset);
+            updateConcentrationSimulation();
+        });
+        tr.querySelector('.sched-offset').addEventListener('change', () => {
+            doseSchedule.sort((a, b) => a.timeOffset - b.timeOffset);
+            renderScheduleTable();
+            updateConcentrationSimulation();
+        });
+
+        tr.querySelector('.sched-dose').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            if (isNaN(val) || val <= 0) return;
+            item.dose = val;
+            updateConcentrationSimulation();
+        });
+
+        tr.querySelector('.sched-tinf').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            if (isNaN(val) || val <= 0) return;
+            item.tinf = val;
+            updateConcentrationSimulation();
+        });
+
+        tr.querySelector('.delete-sched-btn').addEventListener('click', () => {
+            doseSchedule = doseSchedule.filter(d => d.id !== id);
+            renderScheduleTable();
+            updateConcentrationSimulation();
+        });
+    });
+
+    updateTableCmaxCmin();
+};
+
+const generateScheduleFromPlan = () => {
+    if (!pState.isValid) {
+        alert('患者情報を入力し、計算可能な状態にしてください。');
+        return;
+    }
+
+    const simDose = parseFloat(document.getElementById('simDose').value) || 0;
+    const simTau = parseInt(document.getElementById('simInterval').value) || 12;
+
+    if (simDose <= 0) {
+        alert('維持用量が設定されていません。');
+        return;
+    }
+
+    initScheduleStartDateTime();
+
+    doseSchedule = [];
+    let currentOffset = 0;
+    const totalDoses = 6;
+
+    const initDoseVal = parseFloat(document.getElementById('initialDose').textContent) || 0;
+    if (pState.mode === 'adult' && initDoseVal > 0) {
+        doseSchedule.push({
+            id: Date.now() + '_0',
+            dose: initDoseVal,
+            tinf: getStandardInfusionTime(initDoseVal),
+            timeOffset: 0,
+            type: 'loading'
+        });
+        currentOffset = simTau;
+    } else {
+        doseSchedule.push({
+            id: Date.now() + '_0',
+            dose: simDose,
+            tinf: getStandardInfusionTime(simDose),
+            timeOffset: 0,
+            type: 'maintenance'
+        });
+        currentOffset = simTau;
+    }
+
+    for (let i = 1; i < totalDoses; i++) {
+        doseSchedule.push({
+            id: Date.now() + '_' + i,
+            dose: simDose,
+            tinf: getStandardInfusionTime(simDose),
+            timeOffset: currentOffset,
+            type: 'maintenance'
+        });
+        currentOffset += simTau;
+    }
+
+    renderScheduleTable();
+    updateConcentrationSimulation();
+};
+
+const addDoseRow = () => {
+    initScheduleStartDateTime();
+    let nextOffset = 0;
+    let nextDose = 1000;
+    let nextTinf = 1.0;
+
+    if (doseSchedule.length > 0) {
+        const last = doseSchedule[doseSchedule.length - 1];
+        const tau = parseInt(document.getElementById('simInterval').value) || 12;
+        nextOffset = last.timeOffset + tau;
+        nextDose = last.dose;
+        nextTinf = last.tinf;
+    } else {
+        const simDose = parseFloat(document.getElementById('simDose').value);
+        if (!isNaN(simDose) && simDose > 0) nextDose = simDose;
+        nextTinf = getStandardInfusionTime(nextDose);
+    }
+
+    doseSchedule.push({
+        id: Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        dose: nextDose,
+        tinf: nextTinf,
+        timeOffset: nextOffset,
+        type: 'maintenance'
+    });
+
+    doseSchedule.sort((a, b) => a.timeOffset - b.timeOffset);
+    renderScheduleTable();
+    updateConcentrationSimulation();
+};
+
+const setupCanvasInteractions = () => {
+    const canvas = document.getElementById('concentrationCanvas');
+    const tooltip = document.getElementById('graphTooltip');
+    if (!canvas || !tooltip) return;
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (doseSchedule.length === 0 || !pState.isValid) {
+            tooltip.style.display = 'none';
+            return;
+        }
+
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        const padL = 50;
+        const padR = 25;
+        const padT = 30;
+        const padB = 40;
+        const plotW = rect.width - padL - padR;
+
+        if (x < padL || x > padL + plotW || y < padT || y > rect.height - padB) {
+            graphHoverTime = null;
+            tooltip.style.display = 'none';
+            drawConcentrationGraph();
+            return;
+        }
+
+        const lastDose = doseSchedule[doseSchedule.length - 1];
+        const maxOffset = lastDose ? lastDose.timeOffset : 24;
+        const maxTime = Math.max(48, Math.ceil((maxOffset + 24) / 12) * 12);
+
+        const t = Math.max(0, Math.min(maxTime, ((x - padL) / plotW) * maxTime));
+        graphHoverTime = t;
+
+        const conc = getConcentrationAt(t);
+
+        let statusText = '消失期';
+        doseSchedule.forEach((d, idx) => {
+            if (t >= d.timeOffset && t <= d.timeOffset + d.tinf) {
+                statusText = `投与 #${idx+1} 点滴中 (${d.dose}mg)`;
+            }
+        });
+
+        let dateStr = '';
+        if (scheduleBaseDateTime) {
+            const curDate = new Date(scheduleBaseDateTime.getTime() + t * 3600 * 1000);
+            const pad = (n) => String(n).padStart(2, '0');
+            dateStr = `${curDate.getMonth()+1}/${curDate.getDate()} ${pad(curDate.getHours())}:${pad(curDate.getMinutes())}`;
+        }
+
+        tooltip.innerHTML = `
+            <div style="font-weight:bold; border-bottom:1px solid #374151; margin-bottom:3px; padding-bottom:2px;">
+                経過時間: ${t.toFixed(1)}h ${dateStr ? `(${dateStr})` : ''}
+            </div>
+            <div>血中濃度: <strong style="color:#60a5fa; font-size:1rem;">${conc.toFixed(1)}</strong> μg/mL</div>
+            <div style="font-size:0.75rem; color:#9ca3af; margin-top:2px;">状態: ${statusText}</div>
+        `;
+        tooltip.style.display = 'block';
+
+        let tipX = x + 12;
+        if (tipX + 170 > rect.width) tipX = x - 180;
+        let tipY = y - 35;
+        if (tipY < 0) tipY = y + 15;
+
+        tooltip.style.left = `${tipX}px`;
+        tooltip.style.top = `${tipY}px`;
+
+        drawConcentrationGraph();
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+        graphHoverTime = null;
+        tooltip.style.display = 'none';
+        drawConcentrationGraph();
+    });
+
+    window.addEventListener('resize', () => {
+        drawConcentrationGraph();
+    });
+};
+
+document.getElementById('scheduleStartDateTime').addEventListener('change', (e) => {
+    if (e.target.value) {
+        scheduleBaseDateTime = new Date(e.target.value);
+        renderScheduleTable();
+        updateConcentrationSimulation();
+    }
+});
+
+document.getElementById('btnAutoGenerateSchedule').addEventListener('click', generateScheduleFromPlan);
+document.getElementById('btnAddDoseRow').addEventListener('click', addDoseRow);
+document.getElementById('btnClearSchedule').addEventListener('click', () => {
+    if (confirm('投与予定履歴をクリアしますか？')) {
+        doseSchedule = [];
+        renderScheduleTable();
+        updateConcentrationSimulation();
+    }
+});
+
 const updateAll = () => {
     calculateBaseParam();
     recommendDose();
     simulatePK();
+    updateConcentrationSimulation();
 };
 
 document.getElementById('clearBtn').addEventListener('click', () => {
-    // フォーム全体をリセット（ラジオボタン等も初期状態へ）
     document.getElementById('calcForm').reset();
-    
-    // 性別等のデフォルト値復元対応（リセットでcheckedは初期HTML状態に戻るため、明示的に再発火）
     document.querySelector('input[name="patientType"][value="adult"]').click();
-    
+    doseSchedule = [];
+    renderScheduleTable();
     updateAll();
 });
 
@@ -930,6 +1741,9 @@ document.querySelectorAll('.sim-input').forEach(input => {
 });
 
 // Boot
+initScheduleStartDateTime();
+renderScheduleTable();
+setupCanvasInteractions();
 renderSettingsTable();
 updateAll();
 
